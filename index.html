@@ -428,13 +428,9 @@ Be constructive and specific.`
       const content = e.target.result;
       uploadedFileContent = content;
       
-      appendMessage('file-upload', `📎 Uploaded: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`);
+      appendMessage('system-msg', `✅ File uploaded: ${file.name} (${(file.size / 1024).toFixed(1)} KB) — Your file content will be included when you send your next message.`);
       
-      // Auto-send a message about the uploaded file
-      const autoPrompt = `I've uploaded a document called "${file.name}". Please analyze this assignment document and provide feedback on its clarity, structure, and alignment with best practices.`;
-      
-      userInput.value = autoPrompt;
-      await sendMessage();
+      // DO NOT auto-send - let user click Send when ready
     };
     
     reader.readAsText(file);
