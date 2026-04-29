@@ -9,7 +9,7 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; display: flex; justify-content: center; padding: 24px 16px; }
     .container { background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); padding: 28px; width: 100%; max-width: 720px; }
-    h1 { font-size: 1.4rem; color: #1e3a5f; margin-bottom: 6px; }
+    h1 { font-size: 1.4rem; color: #024230; margin-bottom: 6px; }
     .subtitle { font-size: 0.9rem; color: #6b7280; margin-bottom: 20px; }
 
     #chat-window {
@@ -36,19 +36,20 @@
     }
 
     .message.user {
-      background: #2563eb;
+      background: #024230;
       color: white;
       align-self: flex-end;
       border-bottom-right-radius: 2px;
     }
 
     .message.ai {
-      background: #e5e7eb;
+      background: #E8F4F0;
       color: #1f2937;
       align-self: flex-start;
       border-bottom-left-radius: 2px;
       padding: 12px 16px;
       overflow: visible;
+      border-left: 3px solid #024230;
     }
 
     .message.ai p { margin-bottom: 8px; }
@@ -57,19 +58,19 @@
     .message.ai ul { list-style-type: disc; }
     .message.ai ol { list-style-type: decimal; }
     .message.ai li { margin-bottom: 4px; padding-left: 4px; }
-    .message.ai h1, .message.ai h2, .message.ai h3 { font-size: 1rem; font-weight: 700; margin-bottom: 6px; margin-top: 10px; color: #111827; }
+    .message.ai h1, .message.ai h2, .message.ai h3 { font-size: 1rem; font-weight: 700; margin-bottom: 6px; margin-top: 10px; color: #024230; }
     .message.ai h1:first-child, .message.ai h2:first-child, .message.ai h3:first-child { margin-top: 0; }
-    .message.ai strong { font-weight: 700; }
+    .message.ai strong { font-weight: 700; color: #024230; }
     .message.ai em { font-style: italic; }
     .message.ai code { background: #d1d5db; padding: 2px 6px; border-radius: 4px; font-size: 0.85rem; font-family: monospace; }
     .message.ai pre { background: #1f2937; color: #f9fafb; padding: 12px; border-radius: 6px; overflow-x: auto; margin: 8px 0; }
     .message.ai pre code { background: none; padding: 0; color: inherit; }
-    .message.ai blockquote { border-left: 3px solid #9ca3af; padding-left: 12px; color: #6b7280; margin: 8px 0; }
-    .message.ai a { color: #2563eb; text-decoration: underline; }
+    .message.ai blockquote { border-left: 3px solid #CBA052; padding-left: 12px; color: #6b7280; margin: 8px 0; }
+    .message.ai a { color: #024230; text-decoration: underline; }
 
     .message.system-msg {
-      background: #fef3c7;
-      color: #92400e;
+      background: #FFF3CD;
+      color: #856404;
       font-size: 0.8rem;
       align-self: center;
       text-align: center;
@@ -79,11 +80,12 @@
     }
 
     .message.thinking {
-      background: #e5e7eb;
-      color: #9ca3af;
+      background: #E8F4F0;
+      color: #024230;
       align-self: flex-start;
       border-bottom-left-radius: 2px;
       font-style: italic;
+      border-left: 3px solid #024230;
     }
 
     .input-row { display: flex; gap: 10px; align-items: flex-end; }
@@ -109,11 +111,11 @@
       word-wrap: break-word !important;
     }
 
-    #user-input:focus { border-color: #2563eb; }
+    #user-input:focus { border-color: #024230; }
 
     #send-btn {
       padding: 10px 20px;
-      background: #2563eb;
+      background: #024230;
       color: white;
       border: none;
       border-radius: 8px;
@@ -124,7 +126,7 @@
       align-self: flex-end;
     }
 
-    #send-btn:hover { background: #1d4ed8; }
+    #send-btn:hover { background: #004d38; }
     #send-btn:disabled { background: #93c5fd; cursor: not-allowed; }
 
     .clear-btn {
@@ -153,7 +155,7 @@
   <h1>🤖 AI Sandbox</h1>
   <p class="subtitle">Powered by Groq — Ask anything related to this course.</p>
 
-  <textarea id="system-prompt" style="display:none;">You are a helpful academic assistant. Answer questions clearly and concisely. If asked about topics unrelated to learning, politely redirect the student.</textarea>
+  <textarea id="system-prompt" style="display:none;">You are a helpful instructional design assistant helping faculty improve their courses using evidence-based pedagogical practices. Focus on practical, actionable advice. If asked about topics unrelated to teaching and learning, politely redirect to course-related questions.</textarea>
 
   <div id="chat-window">
     <div class="message system-msg">Conversation started. Ask your question below.</div>
@@ -171,11 +173,10 @@
 
 <script>
   // =============================================
-  // CONFIGURATION — edit these lines only
+  // CONFIGURATION - Cloudflare Worker Backend
   // =============================================
-  const API_KEY = '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';
-  const MODEL   = 'llama-3.3-70b-versatile';
-  const API_URL = 'https://corsproxy.io/?https://api.groq.com/openai/v1/chat/completions';
+  const BACKEND_URL = 'https://old-smoke-4ebb.rosenberger-kl.workers.dev';
+  const MODEL = 'llama-3.3-70b-versatile';
   // =============================================
 
   marked.setOptions({ breaks: true, gfm: true });
@@ -206,7 +207,7 @@
     const div = document.createElement('div');
     div.className = 'message thinking';
     div.id = 'thinking-indicator';
-    div.textContent = '● ● ●';
+    div.textContent = 'Thinking...';
     chatWindow.appendChild(div);
     chatWindow.scrollTop = chatWindow.scrollHeight;
   }
@@ -231,7 +232,7 @@
     const systemPrompt = document.getElementById('system-prompt').value;
 
     try {
-      // Convert Gemini-style history to OpenAI-style messages
+      // Convert history to OpenAI format
       const messages = [{ role: 'system', content: systemPrompt }];
       for (const turn of chatHistory) {
         if (turn.role === 'user') {
@@ -241,23 +242,25 @@
         }
       }
 
-      const response = await fetch(API_URL, {
+      // Call secure Cloudflare Worker backend
+      const response = await fetch(BACKEND_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + API_KEY
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: MODEL,
-          messages: messages
+          messages: messages,
+          model: MODEL
         })
       });
+
+      if (!response.ok) {
+        throw new Error(`Backend error: ${response.status} ${response.statusText}`);
+      }
 
       const data = await response.json();
 
       if (data.error) {
         removeThinking();
-        appendMessage('ai', '**Error:** ' + data.error.message);
+        appendMessage('ai', '**Error:** ' + (data.error.message || JSON.stringify(data.error)));
       } else {
         const reply = data.choices?.[0]?.message?.content || 'No response received.';
         removeThinking();
@@ -267,7 +270,8 @@
 
     } catch (err) {
       removeThinking();
-      appendMessage('ai', '**Network error:** ' + err.message);
+      console.error('Error:', err);
+      appendMessage('ai', '**Connection error:** ' + err.message + '. Please try again or contact support.');
     }
 
     btn.disabled = false;
