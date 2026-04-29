@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Sandbox</title>
+  <title>AI Sandbox - Enhanced</title>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -11,6 +11,26 @@
     .container { background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); padding: 28px; width: 100%; max-width: 720px; }
     h1 { font-size: 1.4rem; color: #024230; margin-bottom: 6px; }
     .subtitle { font-size: 0.9rem; color: #6b7280; margin-bottom: 20px; }
+
+    /* Toolbar */
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+    .toolbar button {
+      background: #f3f4f6;
+      color: #374151;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .toolbar button:hover { background: #e5e7eb; }
+    .toolbar button.active { background: #024230; color: white; }
 
     #chat-window {
       border: 1px solid #e5e7eb;
@@ -33,6 +53,7 @@
       max-width: 88%;
       word-wrap: break-word;
       overflow-wrap: break-word;
+      position: relative;
     }
 
     .message.user {
@@ -88,7 +109,15 @@
       border-left: 3px solid #024230;
     }
 
-    .input-row { display: flex; gap: 10px; align-items: flex-end; }
+    .message.file-upload {
+      background: #E8F4F0;
+      color: #024230;
+      align-self: flex-end;
+      border-left: 3px solid #CBA052;
+      font-size: 0.85rem;
+    }
+
+    .input-row { display: flex; gap: 10px; align-items: flex-end; margin-bottom: 8px; }
 
     #user-input {
       flex: 1 !important;
@@ -99,12 +128,12 @@
       outline: none !important;
       transition: border-color 0.2s !important;
       font-family: 'Segoe UI', sans-serif !important;
-      resize: none !important;
-      overflow: hidden !important;
-      min-height: 42px !important;
-      max-height: 200px !important;
+      resize: vertical !important;
+      overflow-y: auto !important;
+      min-height: 120px !important;
+      max-height: 400px !important;
       line-height: 1.5 !important;
-      height: auto !important;
+      height: 120px !important;
       width: 100% !important;
       display: block !important;
       white-space: pre-wrap !important;
@@ -129,24 +158,115 @@
     #send-btn:hover { background: #004d38; }
     #send-btn:disabled { background: #93c5fd; cursor: not-allowed; }
 
-    .clear-btn {
+    .bottom-controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+
+    .control-group {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .char-counter {
+      font-size: 0.75rem;
+      color: #9ca3af;
+    }
+
+    .file-input-label {
       background: #f3f4f6;
       color: #374151;
       font-size: 0.8rem;
       padding: 6px 12px;
-      margin-top: 10px;
-      border: none;
       border-radius: 8px;
       cursor: pointer;
+      transition: background 0.2s;
+      display: inline-block;
     }
 
-    .clear-btn:hover { background: #e5e7eb; }
+    .file-input-label:hover { background: #e5e7eb; }
+
+    #file-input {
+      display: none;
+    }
 
     .footer {
       margin-top: 14px;
       font-size: 0.75rem;
       color: #9ca3af;
       text-align: center;
+    }
+
+    /* Prompt Library Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal.active { display: flex; }
+
+    .modal-content {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 600px;
+      width: 100%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: #6b7280;
+    }
+
+    .prompt-option {
+      padding: 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .prompt-option:hover {
+      background: #f9fafb;
+      border-color: #024230;
+    }
+
+    .prompt-option h4 {
+      color: #024230;
+      margin-bottom: 4px;
+      font-size: 0.95rem;
+    }
+
+    .prompt-option p {
+      font-size: 0.85rem;
+      color: #6b7280;
     }
   </style>
 </head>
@@ -155,25 +275,49 @@
   <h1>🤖 AI Sandbox</h1>
   <p class="subtitle">Powered by Groq — Ask anything related to this course.</p>
 
-  <textarea id="system-prompt" style="display:none;">You are a helpful instructional design assistant helping faculty improve their courses using evidence-based pedagogical practices. Focus on practical, actionable advice. If asked about topics unrelated to teaching and learning, politely redirect to course-related questions.</textarea>
+  <textarea id="system-prompt" style="display:none;">You are a helpful instructional design assistant helping faculty improve their courses using evidence-based pedagogical practices. When a user uploads a document, analyze it carefully and provide constructive feedback. Focus on practical, actionable advice. If asked about topics unrelated to teaching and learning, politely redirect to course-related questions.</textarea>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <button onclick="openPromptLibrary()">📚 Prompt Library</button>
+    <button onclick="saveConversation()">💾 Save Chat</button>
+    <label for="file-input" class="file-input-label">📎 Upload File</label>
+    <input type="file" id="file-input" accept=".txt,.doc,.docx,.pdf" onchange="handleFileUpload(event)">
+  </div>
 
   <div id="chat-window">
-    <div class="message system-msg">Conversation started. Ask your question below.</div>
+    <div class="message system-msg">Conversation started. Ask your question below or upload a document.</div>
   </div>
 
   <div class="input-row">
-    <textarea id="user-input" placeholder="Type your question and press Enter... (Shift+Enter for new line)" rows="1"></textarea>
+    <textarea id="user-input" placeholder="Type your question and press Enter... (Shift+Enter for new line)"></textarea>
     <button id="send-btn" onclick="sendMessage()">Send</button>
   </div>
 
-  <button class="clear-btn" onclick="clearChat()">🗑 Clear Chat</button>
+  <div class="bottom-controls">
+    <div class="control-group">
+      <button class="file-input-label" onclick="clearChat()">🗑 Clear Chat</button>
+    </div>
+    <span class="char-counter" id="char-counter">0 characters</span>
+  </div>
 
   <div class="footer">This tool uses the Groq API. Do not share personal information.</div>
 </div>
 
+<!-- Prompt Library Modal -->
+<div class="modal" id="prompt-modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 style="color: #024230; font-size: 1.2rem;">Prompt Library</h2>
+      <button class="modal-close" onclick="closePromptLibrary()">×</button>
+    </div>
+    <div id="prompt-options"></div>
+  </div>
+</div>
+
 <script>
   // =============================================
-  // CONFIGURATION - Cloudflare Worker Backend
+  // CONFIGURATION
   // =============================================
   const BACKEND_URL = 'https://old-smoke-4ebb.rosenberger-kl.workers.dev';
   const MODEL = 'llama-3.3-70b-versatile';
@@ -181,16 +325,74 @@
 
   marked.setOptions({ breaks: true, gfm: true });
   const chatHistory = [];
+  let uploadedFileContent = null;
 
   const userInput = document.getElementById('user-input');
+  const charCounter = document.getElementById('char-counter');
+
+  // Prompt Library
+  const promptLibrary = [
+    {
+      title: "TILT-Align My Assignment",
+      description: "Make assignment instructions clearer using the TILT framework",
+      prompt: `I'm a [YOUR DISCIPLINE] professor. Here's an assignment I give students:
+
+[PASTE YOUR ASSIGNMENT]
+
+Help me revise this to be more TILT-aligned by making three things crystal clear:
+1. PURPOSE: Why students are doing this and how it connects to course learning outcomes
+2. TASK: Exactly what students need to do, step by step
+3. CRITERIA: How students will know they've succeeded
+
+Keep my voice and expertise. Don't add educational jargon. Make it direct and student-friendly.`
+    },
+    {
+      title: "Scaffold Complex Assignment",
+      description: "Break down a complex assignment into manageable steps",
+      prompt: `I assign students to [DESCRIBE COMPLEX ASSIGNMENT]. Many students get overwhelmed and don't know where to start.
+
+Break this assignment into 5-7 manageable steps that scaffold the work. For each step:
+- What students do
+- Estimated time it should take
+- One tip for success
+- How to know you're ready to move to the next step
+
+Make it encouraging and practical, not patronizing.`
+    },
+    {
+      title: "Create Retrieval Practice Questions",
+      description: "Generate low-stakes formative assessment questions",
+      prompt: `I'm teaching [COURSE NAME] and students will complete this assignment: [PASTE ASSIGNMENT]
+
+Create 10 retrieval practice questions that:
+1. Check if students understand the key concepts they'll need
+2. Are low-stakes (not graded, just for practice)
+3. Mix question types: multiple choice, short answer, true/false
+4. Include the correct answers with brief explanations
+
+These are formative, not summative—they should help students know what they don't know yet.`
+    },
+    {
+      title: "Analyze Uploaded Document",
+      description: "Get feedback on assignment instructions or rubrics",
+      prompt: `I've uploaded an assignment document. Please analyze it and provide:
+
+1. Strengths: What's working well in these instructions?
+2. Clarity gaps: Where might students get confused?
+3. TILT alignment: How clear are the Purpose, Task, and Criteria?
+4. Suggestions: 3-5 specific improvements I could make
+
+Be constructive and specific.`
+    }
+  ];
+
+  // Character counter
+  userInput.addEventListener('input', function() {
+    charCounter.textContent = this.value.length + ' characters';
+  });
 
   userInput.addEventListener('keydown', function(e) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-  });
-
-  userInput.addEventListener('input', function() {
-    this.style.height = 'auto';
-    this.style.height = Math.min(this.scrollHeight, 200) + 'px';
   });
 
   function appendMessage(role, text) {
@@ -217,15 +419,43 @@
     if (el) el.remove();
   }
 
+  async function handleFileUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+      const content = e.target.result;
+      uploadedFileContent = content;
+      
+      appendMessage('file-upload', `📎 Uploaded: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`);
+      
+      // Auto-send a message about the uploaded file
+      const autoPrompt = `I've uploaded a document called "${file.name}". Please analyze this assignment document and provide feedback on its clarity, structure, and alignment with best practices.`;
+      
+      userInput.value = autoPrompt;
+      await sendMessage();
+    };
+    
+    reader.readAsText(file);
+    event.target.value = ''; // Reset file input
+  }
+
   async function sendMessage() {
     const btn = document.getElementById('send-btn');
-    const userText = userInput.value.trim();
+    let userText = userInput.value.trim();
+    
+    // If there's uploaded file content, prepend it to the message
+    if (uploadedFileContent) {
+      userText = `[UPLOADED DOCUMENT CONTENT]:\n${uploadedFileContent}\n\n[MY QUESTION]: ${userText}`;
+    }
+    
     if (!userText) return;
 
-    appendMessage('user', userText);
+    appendMessage('user', userInput.value); // Show original message without file content
     chatHistory.push({ role: 'user', parts: [{ text: userText }] });
     userInput.value = '';
-    userInput.style.height = 'auto';
+    charCounter.textContent = '0 characters';
     btn.disabled = true;
     appendThinking();
 
@@ -242,7 +472,6 @@
         }
       }
 
-      // Call secure Cloudflare Worker backend
       const response = await fetch(BACKEND_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -274,6 +503,8 @@
       appendMessage('ai', '**Connection error:** ' + err.message + '. Please try again or contact support.');
     }
 
+    // Clear uploaded file content after sending
+    uploadedFileContent = null;
     btn.disabled = false;
     userInput.focus();
   }
@@ -282,6 +513,55 @@
     const chatWindow = document.getElementById('chat-window');
     chatWindow.innerHTML = '<div class="message system-msg">Chat cleared. Start a new conversation.</div>';
     chatHistory.length = 0;
+    uploadedFileContent = null;
+  }
+
+  function openPromptLibrary() {
+    const modal = document.getElementById('prompt-modal');
+    const optionsDiv = document.getElementById('prompt-options');
+    
+    optionsDiv.innerHTML = '';
+    promptLibrary.forEach((prompt, index) => {
+      const div = document.createElement('div');
+      div.className = 'prompt-option';
+      div.innerHTML = `<h4>${prompt.title}</h4><p>${prompt.description}</p>`;
+      div.onclick = () => selectPrompt(index);
+      optionsDiv.appendChild(div);
+    });
+    
+    modal.classList.add('active');
+  }
+
+  function closePromptLibrary() {
+    document.getElementById('prompt-modal').classList.remove('active');
+  }
+
+  function selectPrompt(index) {
+    userInput.value = promptLibrary[index].prompt;
+    charCounter.textContent = promptLibrary[index].prompt.length + ' characters';
+    closePromptLibrary();
+    userInput.focus();
+  }
+
+  function saveConversation() {
+    const chatWindow = document.getElementById('chat-window');
+    const messages = Array.from(chatWindow.querySelectorAll('.message:not(.system-msg)'));
+    
+    let content = 'AI Sandbox Conversation\n';
+    content += '======================\n\n';
+    
+    messages.forEach(msg => {
+      const role = msg.classList.contains('user') ? 'You' : 'AI';
+      content += `${role}:\n${msg.textContent}\n\n`;
+    });
+    
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ai-sandbox-conversation-${Date.now()}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 </script>
 </body>
